@@ -26,6 +26,16 @@ HttpClients without overriding proxy settings, so this should
 actually intercept it — unlike a named-`HttpClient`-based approach,
 which the built-in provider never resolves.
 
+**Caveat I can't fully rule out:** I don't have a compiler or a live
+Jellyfin instance in front of me to verify this against your exact
+server version. If a future/different Jellyfin version explicitly
+disables the default proxy on its internal clients, this plugin's
+proxy target simply won't be hit and TMDB calls will go direct. If
+that happens after installing, check Dashboard → Logs — TMDB timeouts/
+connection errors with no indication the proxy was used would be the
+symptom, and it'd mean falling back to the OS-level `HTTP_PROXY`
+env var approach we discussed earlier (which is layer-independent and
+guaranteed to work regardless of how Jellyfin structures its clients).
 
 ## SOCKS5 auth
 

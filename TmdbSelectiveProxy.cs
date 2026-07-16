@@ -33,10 +33,10 @@ namespace Jellyfin.Plugin.TmdbProxy
         {
             var config = Plugin.Instance?.Configuration;
 
-            var scheme = config?.Type switch
+            var scheme = config?.Type?.ToLowerInvariant() switch
             {
-                ProxyType.Socks5 => "socks5",
-                ProxyType.Https => "https",
+                "socks5" => "socks5",
+                "https" => "https",
                 _ => "http"
             };
 
