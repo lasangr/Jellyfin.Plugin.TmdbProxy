@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TMDB Proxy</title>
+</head>
+<body>
+    <div id="TmdbProxyConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+         data-require="emby-input,emby-button,emby-checkbox,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="TmdbProxyConfigForm">
+                    <div class="verticalSection">
+                        <h2>TMDB Proxy Settings</h2>
+                        <p>
+                            Routes requests to <code>api.tmdb.org</code>,
+                            <code>image.tmdb.org</code>, <code>images.tmdb.org</code>,
+                            and <code>api.themoviedb.org</code> through the proxy
+                            below. All other traffic is unaffected.
+                        </p>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="checkboxContainer">
+                            <input id="Enabled" type="checkbox" is="emby-checkbox" />
+                            <span>Enable proxying</span>
+                        </label>
+                    </div>
+
+                    <div class="selectContainer">
+                        <select is="emby-select" id="Type" label="Proxy type">
+                            <option value="http">HTTP</option>
+                            <option value="https">HTTPS</option>
+                            <option value="socks5">SOCKS5</option>
+                        </select>
+                    </div>
+
+                    <div class="inputContainer">
+                        <input id="Host" is="emby-input" type="text"
+                               label="Proxy host (e.g. 127.0.0.1)" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <input id="Port" is="emby-input" type="number"
+                               label="Proxy port" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <input id="Username" is="emby-input" type="text"
+                               label="Username (optional)" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <input id="Password" is="emby-input" type="password"
+                               label="Password (optional)" />
+                        <div class="fieldDescription">
+                            Stored in plugin config XML on disk in plain text —
+                            use a proxy-specific credential, not one reused elsewhere.
+                        </div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            (function () {
+                const pluginId = "5074745e-45d8-40f7-bd43-2a54fa1df5a0";
+
+                function loadConfig(page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        page.querySelector('#Enabled').checked = !!config.Enabled;
+                        page.querySelector('#Host').value = config.Host || '';
+                        page.querySelector('#Port').value = config.Port || 1080;
+                        page.querySelector('#Username').value = config.Username || '';
+                        page.querySelector('#Password').value = config.Password || '';
+
+                        var setType = function () {
+                            var typeSelect = page.querySelector('#Type');
+                            var target = (config.Type || 'socks5').toLowerCase();
+                            var matched = false;
+                            for (var i = 0; i < typeSelect.options.length; i++) {
+                                var isMatch = typeSelect.options[i].value.toLowerCase() === target;
+                                typeSelect.options[i].selected = isMatch;
+                                if (isMatch) { matched = true; }
+                            }
+                            typeSelect.value = target;
+                            typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            typeSelect.dispatchEvent(new Event('input', { bubbles: true }));
+                            return matched;
+                        };
+
+                        // emby-select is a customized built-in <select> that upgrades
+                        // asynchronously; if we set the value before it's upgraded /
+                        // connected, its internal visual label can end up out of sync.
+                        // Try immediately, then retry shortly after in case this
+                        // specific instance's connection lagged behind the class
+                        // registration (can happen inside the React dashboard shell).
+                        setType();
+                        setTimeout(setType, 50);
+                        setTimeout(setType, 300);
+
+                        Dashboard.hideLoadingMsg();
+                    });
+                }
+
+                function saveConfig(page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.Enabled = page.querySelector('#Enabled').checked;
+                        config.Type = page.querySelector('#Type').value;
+                        config.Host = page.querySelector('#Host').value;
+                        config.Port = parseInt(page.querySelector('#Port').value, 10) || 1080;
+                        config.Username = page.querySelector('#Username').value;
+                        config.Password = page.querySelector('#Password').value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                }
+
+                document.querySelector('#TmdbProxyConfigPage')
+                    .addEventListener('pageshow', function () {
+                        loadConfig(this);
+                    });
+
+                document.querySelector('#TmdbProxyConfigForm')
+                    .addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        saveConfig(document.querySelector('#TmdbProxyConfigPage'));
+                        return false;
+                    });
+            })();
+        </script>
+    </div>
+</body>
+</html>
